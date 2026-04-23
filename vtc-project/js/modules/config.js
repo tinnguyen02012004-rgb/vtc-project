@@ -10,13 +10,14 @@ import { getFirestore }        from 'https://www.gstatic.com/firebasejs/10.12.2/
 
 // ── Firebase project credentials ─────────────────────────
 const firebaseConfig = {
-  apiKey:            'AIzaSyB5fHbj56aCCEXsUocpygQSRsS7OS0kUb4',
-  authDomain:        'anhtrangkhuya02.firebaseapp.com',
-  projectId:         'anhtrangkhuya02',
-  storageBucket:     'anhtrangkhuya02.firebasestorage.app',
-  messagingSenderId: '518341156099',
-  appId:             '1:518341156099:web:3b44e9d73265a9be7c1d36',
+  apiKey: "AIzaSyBQy49IG7E9qcd6G1sM317s7O50FryJhPA",
+  authDomain: "vtc-project-6c9f0.firebaseapp.com",
+  projectId: "vtc-project-6c9f0",
+  storageBucket: "vtc-project-6c9f0.firebasestorage.app",
+  messagingSenderId: "278854919209",
+  appId: "1:278854919209:web:d8b1395d3e28b5e104a838"
 };
+
 
 export const app            = initializeApp(firebaseConfig);
 export const auth           = getAuth(app);
