@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<!--
+  ╔══════════════════════════════════════════════════════╗
+  ║  File: index.html                                    ║
+  ║  Mô tả: HTML chính — Vân Thư Các v3                 ║
+  ║                                                      ║
+  ║  Cấu trúc dự án:                                    ║
+  ║  vtc-project/                                        ║
+  ║  ├── index.html          ← file này                 ║
+  ║  ├── css/                                            ║
+  ║  │   └── style.css       ← toàn bộ CSS              ║
+  ║  └── js/                                             ║
+  ║      ├── main.js         ← entry point (ES Module)  ║
+  ║      └── modules/                                    ║
+  ║          ├── config.js   ← Firebase init            ║
+  ║          ├── state.js    ← biến & hằng số chung     ║
+  ║          ├── auth.js     ← đăng nhập / đăng xuất    ║
+  ║          ├── db.js       ← Firestore novels         ║
+  ║          ├── chat.js     ← Firestore chat realtime  ║
+  ║          ├── ui.js       ← render card, detail…     ║
+  ║          ├── form.js     ← form thêm/sửa, tags      ║
+  ║          ├── filter.js   ← tìm kiếm, lọc, sort      ║
+  ║          ├── stats.js    ← cập nhật số liệu         ║
+  ║          ├── background.js ← canvas animated BG     ║
+  ║          └── music.js   ← music player              ║
+  ╚══════════════════════════════════════════════════════╝
+-->
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>云书阁 · Vân Thư Các</title>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+
+  <!-- App Styles -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ══ ANIMATED CANVAS BACKGROUND ══ -->
+  <canvas id="bgCanvas"></canvas>
+
+  <!-- ══ LOGIN SCREEN ══════════════════════════════════════ -->
+  <div id="loginScreen">
+    <div class="login-card">
+      <div class="login-logo">📖</div>
+      <div class="login-title">云书阁</div>
+      <div class="login-sub">
+        Vân Thư Các · Nhật Ký Truyện Đam Mỹ<br>
+        Đăng nhập để lưu và đồng bộ mọi thiết bị
+      </div>
+      <div class="login-divider">Đăng nhập với</div>
+      <button class="btn-google" id="btnGoogleLogin">
+        <svg class="google-icon" viewBox="0 0 24 24">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+        </svg>
+        Tiếp tục với Google
+      </button>
+      <div class="login-note">Dữ liệu riêng theo tài khoản · Đồng bộ realtime</div>
+    </div>
+  </div>
+
+  <!-- ══ APP SHELL ═════════════════════════════════════════ -->
+  <div id="appShell">
+
+    <!-- Header -->
+    <header>
+      <a class="logo" href="#">
+        <div class="logo-icon">📖</div>
+        <div class="logo-text">
+          <span class="logo-zh">云书阁</span>
+          <span class="logo-vi">Vân Thư Các</span>
+        </div>
+      </a>
+
+      <nav id="statusNav">
+        <button class="active" onclick="filterStatus(this,'all')">✦ Tất Cả <span class="nav-count" id="cnt-all">0</span></button>
+        <button onclick="filterStatus(this,'reading')">📖 Đọc <span class="nav-count" id="cnt-reading">0</span></button>
+        <button onclick="filterStatus(this,'done')">✅ Xong <span class="nav-count" id="cnt-done">0</span></button>
+        <button onclick="filterStatus(this,'plan')">🔖 Dự Định <span class="nav-count" id="cnt-plan">0</span></button>
+        <button onclick="filterStatus(this,'dropped')">💔 Bỏ Dở <span class="nav-count" id="cnt-dropped">0</span></button>
+      </nav>
+
+      <div class="h-right">
+        <div style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text-muted)">
+          <div class="sync-dot" id="syncDot"></div>
+          <span id="syncLabel">Đồng bộ</span>
+        </div>
+        <button class="btn-add" onclick="openAddModal()">+ Thêm</button>
+        <div class="user-wrap">
+          <img id="userAvatar" class="user-avatar" src="" alt="avatar" onclick="toggleUserMenu()">
+          <div class="user-menu" id="userMenu">
+            <div class="user-menu-name" id="userMenuName"></div>
+            <button onclick="handleSignOut()">🚪 Đăng xuất</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main content -->
+    <main>
+      <!-- Stats row -->
+      <div class="stats-row">
+        <div class="stat-card"><span class="stat-icon">📚</span><div class="stat-num" id="s-total">0</div><div class="stat-label">Tổng Số Truyện</div></div>
+        <div class="stat-card"><span class="stat-icon">✨</span><div class="stat-num" id="s-avg">—</div><div class="stat-label">Điểm Trung Bình</div></div>
+        <div class="stat-card"><span class="stat-icon">💬</span><div class="stat-num" id="s-quotes">0</div><div class="stat-label">Câu Nói Hay</div></div>
+        <div class="stat-card"><span class="stat-icon">🎭</span><div class="stat-num" id="s-genres">0</div><div class="stat-label">Thể Loại</div></div>
+      </div>
+
+      <!-- Filter bar -->
+      <div class="filters-bar">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="searchInput" placeholder="Tìm kiếm tên, tác giả, tag..." oninput="renderAll()">
+        </div>
+        <select class="filter-select" id="sortSelect" onchange="renderAll()">
+          <option value="date-desc">Mới nhất</option>
+          <option value="date-asc">Cũ nhất</option>
+          <option value="rating-desc">Điểm cao nhất</option>
+          <option value="title-asc">Tên A→Z</option>
+        </select>
+        <select class="filter-select" id="genreFilter" onchange="renderAll()">
+          <option value="">Tất cả thể loại</option>
+        </select>
+        <div class="view-toggle">
+          <button class="view-btn active" onclick="setView('grid',this)">⊞</button>
+          <button class="view-btn" onclick="setView('list',this)">☰</button>
+        </div>
+      </div>
+
+      <!-- Book cards -->
+      <div id="booksContainer"></div>
+    </main>
+  </div><!-- /#appShell -->
+
+  <!-- ══ BACKGROUND THEME PICKER ════════════════════════════ -->
+  <div id="bgPicker">
+    <div class="bg-dot-wrap">
+      <div class="bg-dot active" id="bg0" style="background:radial-gradient(#1a3a5c,#060e14)" onclick="setBg(0)"></div>
+      <span class="bg-dot-label">🌊 Đại Dương Đêm</span>
+    </div>
+    <div class="bg-dot-wrap">
+      <div class="bg-dot" id="bg1" style="background:radial-gradient(#3d1a5c,#0e0614)" onclick="setBg(1)"></div>
+      <span class="bg-dot-label">🌌 Ngân Hà Tím</span>
+    </div>
+    <div class="bg-dot-wrap">
+      <div class="bg-dot" id="bg2" style="background:radial-gradient(#1a4a2e,#060e0a)" onclick="setBg(2)"></div>
+      <span class="bg-dot-label">🌿 Rừng Ngọc</span>
+    </div>
+    <div class="bg-dot-wrap">
+      <div class="bg-dot" id="bg3" style="background:radial-gradient(#4a2a1a,#140806)" onclick="setBg(3)"></div>
+      <span class="bg-dot-label">🔥 Lửa Hoàng Hôn</span>
+    </div>
+    <div class="bg-dot-wrap">
+      <div class="bg-dot" id="bg4" style="background:radial-gradient(#1a2a4a,#06080e)" onclick="setBg(4)"></div>
+      <span class="bg-dot-label">❄️ Tuyết Lam</span>
+    </div>
+    <div class="bg-dot-wrap">
+      <div class="bg-dot" id="bg5" style="background:radial-gradient(#3a1a3a,#0e060e)" onclick="setBg(5)"></div>
+      <span class="bg-dot-label">🌸 Hoa Anh Đào</span>
+    </div>
+  </div>
+
+  <!-- ══ MUSIC PLAYER ════════════════════════════════════════ -->
+  <div id="musicPlayer">
+    <div class="music-header">
+      <button class="music-toggle" id="musicToggleBtn" onclick="toggleMusicPlayer()">🎵</button>
+      <div class="music-info">
+        <div class="music-title" id="musicTitle">Chưa phát</div>
+        <div class="music-artist" id="musicArtist">— Chọn bài để nghe —</div>
+      </div>
+      <button class="music-collapse" onclick="collapseMusicPlayer()">▾</button>
+    </div>
+    <div class="music-controls">
+      <button class="mc-btn" onclick="prevTrack()" title="Trước">⏮</button>
+      <button class="mc-btn play" id="playBtn" onclick="playPause()">▶</button>
+      <button class="mc-btn" onclick="nextTrack()" title="Tiếp">⏭</button>
+      <input type="range" class="music-vol" id="volSlider" min="0" max="1" step="0.05" value="0.5"
+             oninput="setVolume(this.value)" title="Âm lượng">
+      <div class="music-eq" id="musicEq" style="display:none">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+    <div class="music-playlist" id="musicPlaylist"></div>
+  </div>
+
+  <!-- ══ CHAT ════════════════════════════════════════════════ -->
+  <button id="chatBtn" onclick="toggleChat()" title="Cộng đồng đam mỹ">
+    💬
+    <span id="chatBadge">0</span>
+  </button>
+
+  <div id="chatPanel">
+    <div class="chat-header">
+      <div>
+        <div class="chat-header-title">☁ Vân Thư Lounge</div>
+        <div class="chat-online" id="chatOnline">● Đang tải...</div>
+      </div>
+      <button class="chat-close" onclick="toggleChat()">✕</button>
+    </div>
+    <div id="chatMessages">
+      <div class="chat-system">Chào mừng đến Vân Thư Lounge 🌸</div>
+    </div>
+    <div class="chat-input-row">
+      <textarea id="chatInput" placeholder="Nhắn tin..." rows="1"
+        oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMsg();}"></textarea>
+      <button id="chatSend" onclick="sendChatMsg()">➤</button>
+    </div>
+  </div>
+
+  <!-- ══ TOAST ═══════════════════════════════════════════════ -->
+  <div class="toast" id="toast"></div>
+
+  <!-- ══ MODAL: THÊM / SỬA TRUYỆN ══════════════════════════ -->
+  <div class="modal-overlay" id="addModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title" id="formTitle">Thêm Truyện Mới</div>
+          <div class="modal-sub">Điền thông tin bộ truyện</div>
+        </div>
+        <button class="close-btn" onclick="closeModal('addModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+
+          <div class="form-group form-full">
+            <label class="form-label">Tên Truyện *</label>
+            <input class="form-input" id="f-title" placeholder="Ví dụ: Thiên Quan Tứ Phúc...">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tác Giả</label>
+            <input class="form-input" id="f-author" placeholder="Tên tác giả">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Trạng Thái *</label>
+            <select class="form-select" id="f-status">
+              <option value="plan">🔖 Dự Định Đọc</option>
+              <option value="reading">📖 Đang Đọc</option>
+              <option value="done">✅ Đã Đọc Xong</option>
+              <option value="dropped">💔 Bỏ Dở</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tổng Chương</label>
+            <input class="form-input" id="f-chapters" type="number" placeholder="0" min="0">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Chương Đã Đọc</label>
+            <input class="form-input" id="f-chapread" type="number" placeholder="0" min="0">
+          </div>
+          <div class="form-group">
+            <label class="form-label">URL Ảnh Bìa</label>
+            <input class="form-input" id="f-cover" placeholder="https://...">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Đánh Giá</label>
+            <div class="star-picker" id="starPicker">
+              <span onclick="setRating(1)">★</span>
+              <span onclick="setRating(2)">★</span>
+              <span onclick="setRating(3)">★</span>
+              <span onclick="setRating(4)">★</span>
+              <span onclick="setRating(5)">★</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Năm Đọc</label>
+            <input class="form-input" id="f-year" type="number" placeholder="2024">
+          </div>
+
+          <div class="form-group form-full">
+            <label class="form-label">Thể Loại (Enter để thêm)</label>
+            <div class="tag-input-wrap" id="genreTagWrap"
+                 onclick="document.getElementById('genreTagInput').focus()">
+              <input id="genreTagInput" placeholder="Tiên hiệp, Hiện đại..."
+                     onkeydown="handleTagKey(event,'genre')">
+            </div>
+          </div>
+          <div class="form-group form-full">
+            <label class="form-label">Tag Cặp Đôi (Enter để thêm)</label>
+            <div class="tag-input-wrap" id="pairTagWrap"
+                 onclick="document.getElementById('pairTagInput').focus()">
+              <input id="pairTagInput" placeholder="HE, Cường cường..."
+                     onkeydown="handleTagKey(event,'pair')">
+            </div>
+          </div>
+          <div class="form-group form-full">
+            <label class="form-label">Tóm Tắt</label>
+            <textarea class="form-textarea" id="f-synopsis" placeholder="Nội dung chính..."></textarea>
+          </div>
+          <div class="form-group form-full">
+            <label class="form-label">Nhân Vật (Tên | Vai | Mô tả — mỗi dòng)</label>
+            <textarea class="form-textarea" id="f-chars"
+                      placeholder="Tạ Liên Hoa | Công | Thiên Tướng&#10;Hoa Thành | Vương | Quỷ Vương"></textarea>
+          </div>
+          <div class="form-group form-full">
+            <label class="form-label">Cảm Nhận</label>
+            <textarea class="form-textarea" id="f-review" placeholder="Ghi lại cảm nhận..."></textarea>
+          </div>
+
+        </div><!-- /.form-grid -->
+        <div class="form-actions">
+          <button class="btn-cancel" onclick="closeModal('addModal')">Hủy</button>
+          <button class="btn-save" onclick="saveNovel()">Lưu Truyện</button>
+        </div>
+      </div><!-- /.modal-body -->
+    </div><!-- /.modal -->
+  </div><!-- /#addModal -->
+
+  <!-- ══ MODAL: CHI TIẾT TRUYỆN ═════════════════════════════ -->
+  <div class="modal-overlay" id="detailModal">
+    <div class="modal" style="max-width:820px">
+      <div id="detailContent"></div>
+    </div>
+  </div>
+
+  <!-- ══ SCRIPTS ════════════════════════════════════════════ -->
+  <!--
+    Thứ tự quan trọng:
+    1. background.js & music.js là IIFE thông thường (không module)
+       → chạy trước, không phụ thuộc Firebase
+    2. main.js là ES Module → chạy sau, import các module Firebase
+  -->
+  <script src="js/modules/background.js"></script>
+  <script src="js/modules/music.js"></script>
+  <script type="module" src="js/main.js"></script>
+
+</body>
+</html>
