@@ -36,6 +36,8 @@
 
   <!-- App Styles -->
   <link rel="stylesheet" href="css/style.css">
+  <!-- Sau dòng: <link rel="stylesheet" href="css/style.css"> -->
+  <link rel="stylesheet" href="css/addon.css">
 </head>
 <body>
 
@@ -330,6 +332,129 @@
   <script src="js/modules/background.js"></script>
   <script src="js/modules/music.js"></script>
   <script type="module" src="js/main.js"></script>
+
+  <!-- Sau dòng: <script type="module" src="js/main.js"></script> -->
+  <script src="js/addon.js"></script>
+
+  <!--Bổ sung-->
+  <!--
+  File: addon.html
+  Mô tả: HTML bổ sung — Vân Thư Các v3 ADDON
+  👉 Dán toàn bộ nội dung này vào index.html
+     NGAY TRƯỚC thẻ: <script type="module" src="js/main.js"></script>
+-->
+
+<!-- PAGE LOADER -->
+<div id="vtcPageLoader">
+  <div class="vtc-loader-logo">📖</div>
+  <div class="vtc-loader-title">云书阁</div>
+  <div class="vtc-loader-dots"><span></span><span></span><span></span></div>
+</div>
+
+<!-- AURORA BG -->
+<div id="bgAurora"></div>
+<div id="bgVignette"></div>
+
+<!-- WRITE STORY PANEL -->
+<div id="writeStoryOverlay" onclick="if(event.target===this)closeWriteStory()">
+  <div id="writeStoryPanel">
+    <div class="ws-header">
+      <div class="ws-header-title">✍️ Viết Truyện</div>
+      <div class="ws-tabs">
+        <button class="ws-tab active" id="wsTabWrite" onclick="wsSwitch('write')">✏ Viết</button>
+        <button class="ws-tab"        id="wsTabList"  onclick="wsSwitch('list')">📚 Kho Truyện</button>
+      </div>
+      <button class="ws-btn" style="margin-left:8px" onclick="closeWriteStory()">✕</button>
+    </div>
+    <div class="ws-body">
+      <div class="ws-pane active" id="wsPaneWrite">
+        <div class="ws-field-group">
+          <label class="ws-label">Tiêu đề truyện</label>
+          <input class="ws-input" id="wsTitle" placeholder="Tên bộ truyện bạn muốn viết...">
+        </div>
+        <div class="ws-field-group">
+          <label class="ws-label">Chương</label>
+          <input class="ws-input" id="wsChapter" placeholder="Chương 1 — Gặp gỡ định mệnh">
+        </div>
+        <div class="ws-editor-wrap">
+          <div class="ws-toolbar">
+            <button class="ws-tool-btn" onclick="wsFormat('bold')"      title="Đậm"><b>B</b></button>
+            <button class="ws-tool-btn" onclick="wsFormat('italic')"    title="Nghiêng"><i>I</i></button>
+            <button class="ws-tool-btn" onclick="wsFormat('underline')" title="Gạch chân"><u>U</u></button>
+            <button class="ws-tool-btn" onclick="wsInsertHR()"          title="Dòng kẻ">—</button>
+            <button class="ws-tool-btn" onclick="wsInsertQuote()"       title="Trích dẫn">❝❞</button>
+            <button class="ws-tool-btn" onclick="wsInsertScene()"       title="Chuyển cảnh">※</button>
+            <button class="ws-tool-btn" onclick="wsInsertDiamond()"     title="Ký hiệu">◆</button>
+            <button class="ws-tool-btn" id="wsPreviewBtn" onclick="wsTogglePreview()">👁 Preview</button>
+          </div>
+          <textarea id="wsContent"
+            placeholder="Bắt đầu viết câu chuyện của bạn...&#10;&#10;Để dòng trống giữa các đoạn.&#10;Chúc bạn viết truyện vui! 🌸"></textarea>
+          <div id="wsPreviewArea" style="display:none;flex:1;background:var(--bg-card);
+            border:1px solid var(--border);border-radius:0 0 8px 8px;padding:14px;
+            overflow-y:auto;font-family:'Noto Serif SC';font-size:14px;
+            line-height:1.9;color:var(--text-sub);min-height:220px;"></div>
+        </div>
+        <div class="ws-stats-bar">
+          <span id="wsWordCount">0 từ</span>
+          <span id="wsCharCount">0 ký tự</span>
+          <span id="wsReadTime">~0 phút đọc</span>
+        </div>
+      </div>
+      <div class="ws-pane" id="wsPaneList">
+        <div class="ws-story-list" id="wsStoryList"></div>
+      </div>
+    </div>
+    <div class="ws-footer">
+      <button class="ws-btn"         onclick="wsNewStory()">🗑 Xóa draft</button>
+      <button class="ws-btn"         onclick="wsSave()">💾 Lưu</button>
+      <button class="ws-btn primary" onclick="wsPublish()">✨ Lưu & Xuất</button>
+    </div>
+  </div>
+</div>
+
+<!-- EPUB PANEL -->
+<div id="epubOverlay" onclick="if(event.target===this)closeEpub()">
+  <div id="epubPanel">
+    <div class="epub-header">
+      <div class="epub-header-title">📚 Kho EPUB & Link Đọc</div>
+      <button class="ws-btn" onclick="closeEpub()">✕</button>
+    </div>
+    <div class="epub-body">
+      <div class="epub-add-form">
+        <input class="epub-input" id="epubName" placeholder="Tên truyện / tiêu đề...">
+        <div class="epub-add-row">
+          <input class="epub-input" id="epubUrl" placeholder="https://... (link EPUB hoặc trang đọc)">
+          <button class="ws-btn primary" style="flex-shrink:0" onclick="epubAdd()">+ Thêm</button>
+        </div>
+        <input class="epub-input" id="epubNote" placeholder="Ghi chú (tuỳ chọn)...">
+      </div>
+      <div class="epub-list" id="epubList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- RANKING PANEL -->
+<div id="rankOverlay" onclick="if(event.target===this)closeRank()">
+  <div id="rankPanel">
+    <div class="rank-header">
+      <div class="rank-header-title">🏆 Bảng Xếp Hạng</div>
+      <div class="rank-seg">
+        <button class="rank-seg-btn active" id="rankSegNovel" onclick="rankSwitchSeg('novel',this)">📚 Truyện</button>
+        <button class="rank-seg-btn"        id="rankSegChar"  onclick="rankSwitchSeg('char',this)">🎭 Nhân Vật</button>
+      </div>
+      <button class="ws-btn" style="margin-left:8px" onclick="closeRank()">✕</button>
+    </div>
+    <div class="rank-sort-bar" id="rankSortBar">
+      <button class="rank-sort-btn active" onclick="rankSort('rating',this)">⭐ Điểm</button>
+      <button class="rank-sort-btn"        onclick="rankSort('title',this)">🔤 Tên A→Z</button>
+      <button class="rank-sort-btn"        onclick="rankSort('progress',this)">📖 Tiến độ</button>
+      <button class="rank-sort-btn"        onclick="rankSort('quotes',this)">💬 Câu hay</button>
+    </div>
+    <div class="rank-body">
+      <div class="rank-list" id="rankList"></div>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
