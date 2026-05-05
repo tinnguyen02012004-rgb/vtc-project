@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<!--
+  File: read.html
+  Mô tả: Trang đọc truyện + comment theo đoạn
+  👉 Đặt file này cùng cấp với index.html trong project
+  👉 Truy cập: read.html?id=STORY_ID
+-->
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đọc Truyện · 云书阁</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;700&family=Playfair+Display:ital,wght@0,400;0,600&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ── Variables ── */
+    :root {
+      --bg:         #060e14;
+      --bg-mid:     #0b1a24;
+      --bg-card:    #0f2030;
+      --bg-card2:   #152840;
+      --accent:     #4ecdc4;
+      --accent2:    #5ba8d4;
+      --text:       #d4ecf0;
+      --text-sub:   #6fa8b8;
+      --text-muted: #324f5e;
+      --border:     rgba(78,205,196,0.14);
+      --border-hi:  rgba(78,205,196,0.38);
+      --glow:       0 0 24px rgba(78,205,196,0.15);
+      --shadow:     0 8px 32px rgba(0,0,0,0.6);
+      --radius:     12px;
+      /* Reading settings */
+      --read-font-size:   17px;
+      --read-line-height: 2;
+      --read-max-width:   680px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── Animated BG ── */
+    body {
+      min-height: 100vh; font-family: 'Noto Sans SC', sans-serif;
+      color: var(--text); background: var(--bg); overflow-x: hidden;
+    }
+    body::before {
+      content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse 60% 40% at 10% 8%,  rgba(78,205,196,0.06) 0%, transparent 65%),
+        radial-gradient(ellipse 55% 55% at 90% 88%, rgba(91,168,212,0.06) 0%, transparent 60%);
+      animation: bgPulse 14s ease-in-out infinite alternate;
+    }
+    @keyframes bgPulse {
+      from { opacity: 0.7; } to { opacity: 1; }
+    }
+
+    /* ── Top nav bar ── */
+    .top-bar {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(6,14,20,0.95); backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 1.5rem; height: 56px;
+      display: flex; align-items: center; gap: 12px;
+      box-shadow: 0 2px 20px rgba(0,0,0,0.5);
+    }
+    .nav-back {
+      display: flex; align-items: center; gap: 5px;
+      color: var(--accent); font-size: 13px; text-decoration: none;
+      padding: 6px 12px; border-radius: 16px; border: 1px solid var(--border);
+      transition: all 0.2s; white-space: nowrap;
+    }
+    .nav-back:hover { background: rgba(78,205,196,0.1); }
+    .nav-title {
+      font-family: 'Noto Serif SC'; font-size: 15px; flex: 1;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    /* Reading controls */
+    .read-controls { display: flex; gap: 6px; }
+    .ctrl-btn {
+      padding: 5px 10px; border-radius: 14px; border: 1px solid var(--border);
+      background: none; color: var(--text-sub); font-size: 12px;
+      cursor: pointer; transition: all 0.2s; white-space: nowrap;
+    }
+    .ctrl-btn:hover { border-color: var(--border-hi); color: var(--accent); }
+    .ctrl-btn.active { background: rgba(78,205,196,0.12); border-color: var(--border-hi); color: var(--accent); }
+
+    /* ── Main layout ── */
+    .reader-wrap {
+      position: relative; z-index: 1;
+      max-width: var(--read-max-width);
+      margin: 0 auto; padding: 2.5rem 1.5rem 6rem;
+    }
+
+    /* ── Story header ── */
+    .story-header { text-align: center; margin-bottom: 3rem; }
+    .story-main-title {
+      font-family: 'Playfair Display'; font-size: 28px; font-weight: 600;
+      color: var(--text); line-height: 1.3; margin-bottom: 12px;
+    }
+    .story-author-meta {
+      font-size: 13px; color: var(--text-sub); display: flex;
+      align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap;
+    }
+    .story-divider {
+      width: 60px; height: 2px; margin: 1.5rem auto;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    }
+
+    /* ── Paragraph block ── */
+    .para-block {
+      position: relative; margin-bottom: 1.8rem;
+      padding: 12px 14px 12px 18px;
+      border-radius: var(--radius);
+      border-left: 3px solid transparent;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .para-block:hover { border-left-color: rgba(78,205,196,0.3); background: rgba(15,32,48,0.4); }
+    .para-block.has-comments { border-left-color: rgba(78,205,196,0.5); }
+
+    /* Paragraph text */
+    .para-text {
+      font-family: 'Noto Serif SC';
+      font-size: var(--read-font-size);
+      line-height: var(--read-line-height);
+      color: var(--text); text-align: justify;
+    }
+
+    /* Comment button (appears on hover) */
+    .para-comment-btn {
+      position: absolute; right: -10px; top: 50%; transform: translateY(-50%);
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--bg-card2); border: 1px solid var(--border-hi);
+      color: var(--accent); font-size: 13px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; transition: all 0.2s;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    }
+    .para-block:hover .para-comment-btn { opacity: 1; }
+    .para-comment-btn:hover { transform: translateY(-50%) scale(1.1); box-shadow: var(--glow); }
+
+    /* Comment count badge */
+    .para-comment-count {
+      display: inline-flex; align-items: center; gap: 3px;
+      font-size: 10px; color: var(--text-muted);
+      margin-top: 5px; cursor: pointer; transition: color 0.2s;
+    }
+    .para-comment-count:hover { color: var(--accent); }
+
+    /* ── Comment section per paragraph ── */
+    .para-comments {
+      margin-top: 10px; display: none;
+    }
+    .para-comments.open { display: block; animation: fadeSlide 0.2s ease; }
+    @keyframes fadeSlide {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Comment list */
+    .comment-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+    .comment-item {
+      background: rgba(15,32,48,0.7); border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px 13px;
+      display: flex; gap: 9px; align-items: flex-start;
+    }
+    .comment-avatar {
+      width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; color: #fff; overflow: hidden;
+    }
+    .comment-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .comment-body { flex: 1; min-width: 0; }
+    .comment-author { font-size: 11px; color: var(--accent); font-weight: 500; margin-bottom: 3px; }
+    .comment-text   { font-size: 13px; color: var(--text-sub); line-height: 1.6; }
+    .comment-time   { font-size: 10px; color: var(--text-muted); margin-top: 3px; }
+
+    /* Comment input */
+    .comment-input-wrap {
+      display: flex; gap: 8px; align-items: flex-end;
+    }
+    .comment-textarea {
+      flex: 1; background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 9px 12px; color: var(--text);
+      font-size: 12px; font-family: 'Noto Sans SC'; outline: none;
+      resize: none; max-height: 100px; transition: border-color 0.2s;
+    }
+    .comment-textarea:focus { border-color: var(--border-hi); }
+    .comment-textarea::placeholder { color: var(--text-muted); }
+    .comment-send {
+      width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none; color: #fff; font-size: 14px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+    .comment-send:hover { transform: scale(1.05); box-shadow: var(--glow); }
+    .comment-send:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .comment-login-hint {
+      font-size: 11px; color: var(--text-muted); padding: 6px 0;
+    }
+
+    /* ── Empty / loading / error states ── */
+    .state-msg {
+      text-align: center; padding: 4rem 2rem; color: var(--text-muted);
+    }
+    .state-msg .icon { font-size: 44px; margin-bottom: 12px; opacity: 0.3; }
+    .state-msg p { font-size: 14px; line-height: 1.8; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 999;
+      background: var(--bg-card2); border: 1px solid var(--border-hi);
+      border-radius: 10px; padding: 11px 18px; font-size: 12px; color: var(--text);
+      box-shadow: var(--shadow); transform: translateY(20px); opacity: 0;
+      transition: all 0.3s; pointer-events: none;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    /* ── Reading settings panel ── */
+    #settingsPanel {
+      position: fixed; top: 64px; right: 1rem; z-index: 200;
+      background: var(--bg-mid); border: 1px solid var(--border-hi);
+      border-radius: var(--radius); padding: 1rem 1.2rem; width: 220px;
+      box-shadow: var(--shadow); display: none;
+    }
+    #settingsPanel.open { display: block; animation: fadeSlide 0.2s ease; }
+    .sp-label  { font-size: 10px; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 7px; }
+    .sp-row    { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .sp-slider { flex: 1; -webkit-appearance: none; appearance: none; height: 3px; border-radius: 2px; background: var(--border); outline: none; cursor: pointer; }
+    .sp-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 13px; height: 13px; border-radius: 50%; background: var(--accent); cursor: pointer; }
+    .sp-val    { font-size: 11px; color: var(--text-sub); min-width: 28px; text-align: right; }
+    .sp-bg-row { display: flex; gap: 6px; }
+    .sp-bg-btn {
+      flex: 1; padding: 5px; border-radius: 7px; border: 1px solid var(--border);
+      font-size: 10px; cursor: pointer; background: none; color: var(--text-sub);
+      transition: all 0.2s; text-align: center;
+    }
+    .sp-bg-btn.active { border-color: var(--border-hi); color: var(--accent); background: rgba(78,205,196,0.1); }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── Background themes ── */
+    body.theme-sepia  { --bg:#1a1408; background: #1a1408; --text: #e8d5b0; }
+    body.theme-paper  { --bg:#f5f0e8; background: #f5f0e8; --text: #2a2015; --text-sub: #6a5a40; --bg-card: #ede8de; --bg-card2: #e5dfd3; }
+
+    @media (max-width: 600px) {
+      .read-controls { display: none; }
+      .reader-wrap { padding: 1.5rem 1rem 5rem; }
+      .story-main-title { font-size: 22px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Top navigation bar -->
+<div class="top-bar">
+  <a href="stories.html" class="nav-back">← Danh sách</a>
+  <div class="nav-title" id="navTitle">Đang tải...</div>
+  <div class="read-controls">
+    <button class="ctrl-btn" onclick="toggleSettings()" id="settingsBtn">⚙️ Cài đặt</button>
+  </div>
+</div>
+
+<!-- Reading settings panel -->
+<div id="settingsPanel">
+  <div class="sp-label">Cỡ chữ</div>
+  <div class="sp-row">
+    <span style="font-size:11px;color:var(--text-muted)">A</span>
+    <input type="range" class="sp-slider" id="fontSlider" min="14" max="22" value="17"
+           oninput="updateFontSize(this.value)">
+    <span style="font-size:15px;color:var(--text-muted)">A</span>
+    <span class="sp-val" id="fontVal">17px</span>
+  </div>
+  <div class="sp-label">Giãn dòng</div>
+  <div class="sp-row">
+    <input type="range" class="sp-slider" id="lineSlider" min="1.4" max="2.6" step="0.1" value="2"
+           oninput="updateLineHeight(this.value)">
+    <span class="sp-val" id="lineVal">2.0</span>
+  </div>
+  <div class="sp-label">Giao diện</div>
+  <div class="sp-bg-row">
+    <button class="sp-bg-btn active" id="themeDark"  onclick="setTheme('dark')">🌑 Tối</button>
+    <button class="sp-bg-btn"        id="themeSepia" onclick="setTheme('sepia')">🟫 Sepia</button>
+    <button class="sp-bg-btn"        id="themePaper" onclick="setTheme('paper')">📄 Sáng</button>
+  </div>
+</div>
+
+<!-- Main reading area -->
+<div class="reader-wrap" id="readerWrap">
+  <div class="state-msg">
+    <div class="icon">📖</div>
+    <p>Đang tải truyện...</p>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module" src="js/read.js"></script>
+</body>
+</html>
